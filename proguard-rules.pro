@@ -15,3 +15,18 @@
 #-keepclassmembers class fqcn.of.javascript.interface.for.webview {
 #   public *;
 #}
+
+-keepclasseswithmembernames class * {
+    native <methods>;
+}
+#-libraryjars libs/baidumapapi_base_v3_7_0.jar
+#-libraryjars libs/baidumapapi_cloud_v3_7_0.jar
+#-libraryjars libs/baidumapapi_map_v3_7_0.jar
+#-libraryjars libs/baidumapapi_radar_v3_7_0.jar
+#-libraryjars libs/baidumapapi_search_v3_7_0.jar
+#-libraryjars libs/baidumapapi_util_v3_7_0.jar
+#-libraryjars libs/locSDK_6.13.jar
+-dontwarn com.baidu.**
+-keep class com.baidu.** { *; }
+-dontwarn vi.com.gdi.bgl.android.**
+-keep class vi.com.gdi.bgl.android.**{*;}
