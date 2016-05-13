@@ -1,8 +1,10 @@
 package com.baidumap;
 
 import android.app.Activity;
+import android.content.Context;
 import android.text.TextUtils;
 
+import com.baidu.location.BDLocation;
 import com.baidu.location.BDLocationListener;
 import com.baidu.location.LocationClient;
 import com.baidu.location.LocationClientOption;
@@ -25,8 +27,8 @@ public class BaiduMapHelper {
 
     private static String encode = "bd09ll";
 
-    public static LocationClient buildLocationClient(Activity activity, BDLocationListener bdLocationListener) {
-        LocationClient mLocClient = new LocationClient(activity);
+    public static LocationClient buildLocationClient(Context context, BDLocationListener bdLocationListener) {
+        LocationClient mLocClient = new LocationClient(context);
         mLocClient.registerLocationListener(bdLocationListener);
         LocationClientOption option = new LocationClientOption();
         option.setLocationMode(LocationClientOption.LocationMode.Hight_Accuracy);
@@ -61,7 +63,7 @@ public class BaiduMapHelper {
 //        if (TextUtils.isEmpty(address))
 //            mSearch.geocode(new GeoCodeOption().city(city));
 //        else
-            mSearch.geocode(new GeoCodeOption().city(city).address(address));
+        mSearch.geocode(new GeoCodeOption().city(city).address(address));
     }
 
     public static void reverseGeoCode(double latitude, double longitude, final OnReverseGeoCodeResult reverseGeoCodeResult) {
@@ -90,5 +92,49 @@ public class BaiduMapHelper {
 
     public interface OnReverseGeoCodeResult {
         void onReverseGeoCodeResult(ReverseGeoCodeResult reverseGeoCodeResult);
+    }
+
+
+    private static LocationClient mLocClient;
+    private volatile static ReverseGeoCodeResult currentLocation;
+
+    public static void getCurrentLocation(final Context context, final CurrentLocationListener locationListener) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                mLocClient = BaiduMapHelper.buildLocationClient(context, new BDLocationListener() {
+                    @Override
+                    public void onReceiveLocation(BDLocation bdLocation) {
+                        mLocClient.stop();
+                        mLocClient = null;
+                        if (bdLocation == null) {
+                            try {
+                                Thread.sleep(10000);
+                            } catch (Exception e) {
+                            }
+                            getCurrentLocation(context, locationListener);
+                        } else {
+                            reverseGeoCode(bdLocation.getLatitude(), bdLocation.getLongitude(), new OnReverseGeoCodeResult() {
+                                @Override
+                                public void onReverseGeoCodeResult(ReverseGeoCodeResult reverseGeoCodeResult) {
+                                    BaiduMapHelper.currentLocation = reverseGeoCodeResult;
+                                    if (locationListener != null)
+                                        locationListener.located(reverseGeoCodeResult);
+                                }
+                            });
+                        }
+                    }
+                });
+                mLocClient.start();
+            }
+        }).run();
+    }
+
+    public static ReverseGeoCodeResult getCurrentLocation() {
+        return currentLocation;
+    }
+
+    public interface CurrentLocationListener {
+        void located(ReverseGeoCodeResult geoCodeResult);
     }
 }
